@@ -1,13 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  AudioLines,
-  Headset,
-  Mic,
-  MicOff,
-  PhoneOff,
-  X,
-  TicketCheck,
-} from "lucide-react";
+import { Headset, Mic, MicOff, PhoneOff, X, TicketCheck } from "lucide-react";
 import { PipecatClient } from "@pipecat-ai/client-js";
 import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
 import { dateLabel, time, type CallEvent, type Visit } from "./data";
@@ -23,7 +15,7 @@ export function Call({
   committed,
 }: {
   close: () => void;
-  committed: () => void;
+  committed: (receipt: Visit) => void;
 }) {
   const [status, setStatus] = useState("Preparing call"),
     [error, setError] = useState(""),
@@ -184,7 +176,7 @@ export function Call({
             },
             onError: () =>
               fail(
-                "The voice service encountered an error. Check provider access and quota.",
+                "The call connection failed. Start a new call to reconnect.",
               ),
             onTrackStarted: (track, p) => {
               if (
@@ -228,9 +220,11 @@ export function Call({
               if (d.type === "provider-error")
                 fail(
                   d.reason === "quota"
-                    ? "The voice provider has reached its usage limit. Check the free-tier quota before retrying."
+                    ? (d.provider ?? "Voice service") +
+                        " reached its usage limit. Start a new call when quota is available."
                     : d.reason === "credentials"
-                      ? "The voice provider rejected its credentials. Check the backend configuration."
+                      ? (d.provider ?? "Voice service") +
+                        " rejected its credentials. Check the backend configuration."
                       : "A voice provider stopped responding. Try again when service is available.",
                 );
               if (d.type === "identity") setIdentity(d.masked || "Caller");
@@ -251,14 +245,10 @@ export function Call({
                 const receipt = d.receipt;
                 if (receipt) {
                   setReceipts((old) => [
-                    ...old.filter(
-                      (v) =>
-                        v.reference !== receipt.reference ||
-                        v.status !== receipt.status,
-                    ),
+                    ...old.filter((v) => v.reference !== receipt.reference),
                     receipt,
                   ]);
-                  notify.current();
+                  notify.current(receipt);
                 }
               }
             },
@@ -326,9 +316,6 @@ export function Call({
         </button>
       </header>
       <div className="callIdentity">
-        <div className="seal">
-          <AudioLines />
-        </div>
         <h2>Aster Reception</h2>
         <p role="status">
           {status}{" "}
@@ -368,33 +355,27 @@ export function Call({
           </p>
         )}
         {lines.map((l) => (
-          <p key={l.id}>
+          <p
+            key={l.id}
+            className={l.who === "Caller" ? "callerLine" : "agentLine"}
+          >
             <b>{l.who}</b>
             {l.text}
             {l.interrupted && <em>Interrupted</em>}
           </p>
         ))}
         {partial && (
-          <p>
+          <p className="callerLine draft">
             <b>Caller</b>
             {partial}
           </p>
         )}
         {botDraft && (
-          <p>
+          <p className="agentLine draft">
             <b>Aster</b>
             {botDraft}
           </p>
         )}
-        {receipts.map((v) => (
-          <article className="receipt" key={v.reference + v.status}>
-            <TicketCheck size={20} />
-            <b>{v.status}</b>
-            <strong>{v.name}</strong>
-            {v.specialty} · {dateLabel(v.start)} · {time(v.start)}
-            <small>{v.reference}</small>
-          </article>
-        ))}
         {error && (
           <div className="callError" role="alert">
             <h3>
@@ -406,6 +387,27 @@ export function Call({
           </div>
         )}
       </div>
+      {receipts.length > 0 && (
+        <section className="outcomes" aria-label="Appointment receipts">
+          {receipts.map((v) => (
+            <article className="receipt" key={v.reference + v.status}>
+              <TicketCheck size={20} />
+              <b>{v.previous_start ? "Rescheduled" : v.status}</b>
+              <strong>{v.name}</strong>
+              <span>{v.specialty}</span>
+              {v.previous_start && (
+                <small>
+                  Previously {dateLabel(v.previous_start)} at{" "}
+                  {time(v.previous_start)}
+                </small>
+              )}
+              <strong>{dateLabel(v.start)} · {time(v.start)} IST
+              </strong>
+              <small>{v.reference}</small>
+            </article>
+          ))}
+        </section>
+      )}
       <audio ref={audio} autoPlay />
       {blocked && (
         <button
@@ -417,7 +419,7 @@ export function Call({
       <footer>
         {done ? (
           <button className="primary" onClick={() => setRetry((n) => n + 1)}>
-            Try again
+            {error ? "Start a new call" : "Call again"}
           </button>
         ) : (
           <>

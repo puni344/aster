@@ -75,3 +75,4 @@ Browser tests launch an isolated loopback server and temporary database on port 
 - [Interview study notes](docs/interview.md) and [build log](docs/progress.md)
 
 AI assistance generated the implementation, tests and engineering notes in this session. The candidate confirmed free-tier status and authorized two bounded Gemini probes. Candidate authorship, manual code review and a successful candidate-spoken call require separate evidence. The submission form asks for a pipeline explanation in the candidate's own words.
+See [rescheduling and design QA](docs/reschedule-review.md) for the current incident repair, screenshots, live provider checks and regression evidence.

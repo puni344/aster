@@ -112,6 +112,9 @@ class Conversation:
             self.cancel_question
         ) = None
         self.cancel_ok = self.closed = False
+        self.cancel_slot = None
+        self.known_slots = {}
+        self.moving = self.additional = False
         self.offered = set()
         self.last_result = {}
 
@@ -121,6 +124,20 @@ class Conversation:
 
     def user(self, text):
         reply = clean(text)
+        if re.search(r"\bcancel\b", reply):
+            self.moving, self.additional = False, False
+        elif re.search(
+            r"\b(reschedule|move|switch|instead|make it|change (?:the |my |that |this )?(?:time|appointment|visit))\b",
+            reply,
+        ):
+            self.moving, self.additional = True, False
+        elif re.search(
+            r"\b(another|additional|separate|second) (appointment|visit|booking)\b",
+            reply,
+        ):
+            self.moving, self.additional = False, True
+        elif re.search(r"\bbook\b", reply):
+            self.moving, self.additional = False, False
         value = number(text)
         correcting = re.search(
             r"\b(wrong|incorrect|correction|wrong number|change my number|change the number|last digit|first digit|my number is|phone number is)\b",
@@ -134,6 +151,7 @@ class Conversation:
             self.cancel_ref = self.cancel_question = None
             self.cancel_ok = False
             self.last_result.clear()
+            self.known_slots.clear()
         elif awaiting and reply in YES:
             if awaiting == "phone":
                 self.phone, self.pending = self.pending, None
@@ -183,18 +201,80 @@ class Conversation:
                 "instruction": "Ask for the full number, read every digit back and wait for confirmation.",
             }
         if request in self.last_result:
-            return self.last_result[request]
-        if name == "book_appointment":
+            cached_name, cached_args, cached = self.last_result[request]
+            if cached_name != name or cached_args != arguments:
+                return {"error": "REQUEST_CONFLICT"}
+            if "receipt" in cached:
+                current = self.clinic.receipt(
+                    cached["receipt"]["reference"], self.phone
+                )
+                if current and (current["start"], current["status"]) != (
+                    cached["receipt"]["start"],
+                    cached["receipt"]["status"],
+                ):
+                    return {"receipt": current}
+            return cached
+        if name in {"book_appointment", "reschedule_appointment"}:
+            if name == "book_appointment" and self.moving:
+                return {
+                    "error": "RESCHEDULE_REQUIRED",
+                    "instruction": "Use reschedule_appointment to move the existing visit.",
+                }
             slot = arguments.get("slot_id")
             if slot not in self.offered:
                 return {
                     "error": "SLOT_UNAVAILABLE",
                     "instruction": "Check availability first.",
                 }
-            result = self.clinic.mutate(
-                "book", slot, self.phone, self.id + self.phone + request
-            )
+            if name == "reschedule_appointment":
+                if not self.moving:
+                    return {
+                        "error": "MOVE_INTENT_REQUIRED",
+                        "instruction": "Ask whether the caller wants to move an existing appointment.",
+                    }
+                visits = self.clinic.owned(self.phone)
+                reference = arguments.get("reference", "").strip().upper()
+                if not reference and len(visits) > 1:
+                    return {"error": "APPOINTMENT_AMBIGUOUS", "choices": visits}
+                visit = next(
+                    (v for v in visits if not reference or v["reference"] == reference),
+                    None,
+                )
+                if not visit:
+                    return {"error": "APPOINTMENT_NOT_FOUND"}
+                ref = visit["reference"]
+                source = arguments.get("source_slot_id") or self.known_slots.get(ref)
+                if not source:
+                    self.known_slots[ref] = visit["slot_id"]
+                    return {
+                        "error": "SOURCE_REQUIRED",
+                        "visit": visit,
+                        "instruction": "Verify this is the intended visit, then use its original slot ID.",
+                    }
+                result = self.clinic.mutate(
+                    "move",
+                    slot,
+                    self.phone,
+                    self.id + self.phone + request,
+                    reference=visit["reference"],
+                    source=source,
+                )
+            else:
+                result = self.clinic.mutate(
+                    "book",
+                    slot,
+                    self.phone,
+                    self.id + self.phone + request,
+                    additional=self.additional,
+                )
+            if "receipt" in result:
+                self.additional = False
         elif name == "cancel_appointment":
+            if self.moving:
+                return {
+                    "error": "RESCHEDULE_REQUIRED",
+                    "instruction": "Move the visit atomically using reschedule_appointment.",
+                }
             visits = self.clinic.owned(self.phone)
             reference = arguments.get("reference", "").strip().upper()
             if not reference and len(visits) > 1:
@@ -206,8 +286,13 @@ class Conversation:
             if not visit:
                 return {"error": "APPOINTMENT_NOT_FOUND"}
             ref = visit["reference"]
-            if ref != self.cancel_ref or not self.cancel_ok:
+            if (
+                ref != self.cancel_ref
+                or visit["slot_id"] != self.cancel_slot
+                or not self.cancel_ok
+            ):
                 when = datetime.fromisoformat(visit["start"]).strftime("%d %B at %H:%M")
+                self.cancel_slot = visit["slot_id"]
                 self.cancel_ref = ref
                 self.cancel_ok = False
                 self.cancel_question = (
@@ -219,12 +304,20 @@ class Conversation:
                     "question": self.cancel_question,
                 }
             result = self.clinic.mutate(
-                "cancel", ref, self.phone, self.id + self.phone + request
+                "cancel",
+                ref,
+                self.phone,
+                self.id + self.phone + request,
+                source=self.cancel_slot,
             )
             self.cancel_question = self.cancel_ref = None
             self.cancel_ok = False
         else:
             return {"error": "UNKNOWN_TOOL"}
         if "receipt" in result:
-            self.last_result[request] = result
+            receipt = result["receipt"]
+            self.known_slots[receipt["reference"]] = receipt["slot_id"]
+            if receipt["status"] == "Cancelled":
+                self.offered.discard(receipt["slot_id"])
+            self.last_result[request] = (name, dict(arguments), result)
         return result

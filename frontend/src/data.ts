@@ -1,4 +1,5 @@
 export interface Visit {
+  previous_start?: string;
   reference: string;
   status: "Confirmed" | "Cancelled";
   phone: string;
@@ -13,6 +14,7 @@ export type CallEvent =
   | { type: "identity"; masked: string | null }
   | {
       type: "provider-error";
+      provider?: "Gemini" | "ElevenLabs" | "Voice service";
       reason?: "quota" | "credentials" | "unavailable";
     };
 

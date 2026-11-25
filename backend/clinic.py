@@ -32,7 +32,7 @@ def resolve_day(value):
     return date.fromisoformat(value)
 
 
-VISITS = """SELECT a.reference,a.status,a.phone,s.start,d.name,d.specialty
+VISITS = """SELECT a.reference,a.status,a.phone,s.start,s.id AS slot_id,d.name,d.specialty
            FROM appointments a JOIN slots s ON a.slot_id=s.id JOIN doctors d ON s.doctor=d.id"""
 
 
@@ -204,6 +204,13 @@ class Clinic:
             ],
         }
 
+    def receipt(self, reference, phone):
+        with self.transaction() as db:
+            row = db.execute(
+                VISITS + " WHERE a.reference=? AND a.phone=?", (reference, phone)
+            ).fetchone()
+            return public(row) if row else None
+
     def owned(self, phone):
         with self.transaction() as db:
             return [
@@ -215,7 +222,17 @@ class Clinic:
                 )
             ]
 
-    def mutate(self, action, target, phone, request):
+    def mutate(
+        self,
+        action,
+        target,
+        phone,
+        request,
+        *,
+        reference=None,
+        source=None,
+        additional=False,
+    ):
         with self.transaction(True) as db:
             now = clinic_now().isoformat()
             previous = db.execute(
@@ -223,7 +240,8 @@ class Clinic:
             ).fetchone()
             if previous:
                 return json.loads(previous[0])
-            if action == "book":
+            previous_start = None
+            if action in {"book", "move"}:
                 slot = db.execute(
                     "SELECT * FROM slots WHERE id=? AND start>?", (target, now)
                 ).fetchone()
@@ -233,21 +251,59 @@ class Clinic:
                     "SELECT reference,phone FROM appointments WHERE slot_id=? AND status='Confirmed'",
                     (target,),
                 ).fetchone()
-                if taken and taken["phone"] != phone:
-                    return {"error": "SLOT_UNAVAILABLE"}
-                ref = taken["reference"] if taken else "AS-" + uuid4().hex[:8].upper()
-                changed = not taken
-                if changed:
-                    db.execute(
-                        "INSERT INTO appointments VALUES(?,?,?,'Confirmed',?,NULL)",
-                        (ref, target, phone, now),
+                if action == "move":
+                    ref = reference
+                    visit = db.execute(
+                        VISITS
+                        + " WHERE a.reference=? AND a.phone=? AND a.status='Confirmed' AND s.start>?",
+                        (ref, phone, now),
+                    ).fetchone()
+                    if not visit:
+                        return {"error": "APPOINTMENT_NOT_FOUND"}
+                    changed = visit["slot_id"] != target
+                    if changed and visit["slot_id"] != source:
+                        return {
+                            "error": "APPOINTMENT_CHANGED",
+                            "instruction": "Look up the current visit and confirm which time to move.",
+                        }
+                    if taken and taken["reference"] != ref:
+                        return {"error": "SLOT_UNAVAILABLE"}
+                    if changed:
+                        previous_start = visit["start"]
+                        db.execute(
+                            "UPDATE appointments SET slot_id=? WHERE reference=?",
+                            (target, ref),
+                        )
+                else:
+                    if taken and taken["phone"] != phone:
+                        return {"error": "SLOT_UNAVAILABLE"}
+                    if not taken and not additional:
+                        existing = db.execute(
+                            VISITS
+                            + " WHERE a.phone=? AND a.status='Confirmed' AND s.doctor=? AND substr(s.start,1,10)=?",
+                            (phone, slot["doctor"], slot["start"][:10]),
+                        ).fetchall()
+                        if existing:
+                            return {
+                                "error": "EXISTING_VISIT",
+                                "choices": [public(v) for v in existing],
+                                "instruction": "If moving the existing visit use reschedule_appointment. For a separate visit ask the caller to say they want an additional appointment.",
+                            }
+                    ref = (
+                        taken["reference"] if taken else "AS-" + uuid4().hex[:8].upper()
                     )
+                    changed = not taken
+                    if changed:
+                        db.execute(
+                            "INSERT INTO appointments VALUES(?,?,?,'Confirmed',?,NULL)",
+                            (ref, target, phone, now),
+                        )
             elif action == "cancel":
                 ref = target
                 changed = db.execute(
                     """UPDATE appointments SET status='Cancelled',cancelled=? WHERE reference=? AND phone=?
-                       AND status='Confirmed' AND slot_id IN (SELECT id FROM slots WHERE start>?)""",
-                    (now, ref, phone, now),
+                       AND status='Confirmed' AND (? IS NULL OR slot_id=?) AND slot_id IN (SELECT id FROM slots WHERE start>?)""",
+                    (now, ref, phone, source, source, now),
                 ).rowcount
                 if not changed:
                     return {"error": "APPOINTMENT_NOT_FOUND"}
@@ -256,10 +312,12 @@ class Clinic:
             receipt = public(
                 db.execute(VISITS + " WHERE a.reference=?", (ref,)).fetchone()
             )
+            if previous_start:
+                receipt["previous_start"] = previous_start
             if changed:
                 db.execute(
                     "INSERT INTO events(reference,status,created) VALUES(?,?,?)",
-                    (ref, receipt["status"], now),
+                    (ref, "Rescheduled" if previous_start else receipt["status"], now),
                 )
             result = {"receipt": receipt}
             db.execute(

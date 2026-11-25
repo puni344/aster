@@ -9,16 +9,13 @@ import {
 import { createRoot } from "react-dom/client";
 import {
   Asterisk,
-  ArrowUpRight,
   CalendarDays,
   CalendarCheck2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
-  Headset,
   LayoutDashboard,
   Phone,
-  Radio,
   Stethoscope,
   Clock3,
 } from "lucide-react";
@@ -80,6 +77,7 @@ function App() {
     stream.onerror = () => setOnline(false);
     stream.onmessage = (e) => {
       const change = JSON.parse(e.data);
+      if (change.id <= revision.current) return;
       setHighlight({ reference: change.reference, id: change.id });
       void refresh();
     };
@@ -97,6 +95,12 @@ function App() {
     shown = doctors.filter(
       (d) => filter === "All specialties" || d.specialty === filter,
     );
+  const register =
+    page === "Reception"
+      ? visits.filter(
+          (v) => v.start.startsWith(day) && v.status === "Confirmed",
+        )
+      : visits;
   const open = doctors.reduce(
     (n, d) => n + d.slots.filter((s) => s.status === "Open").length,
     0,
@@ -161,7 +165,7 @@ function App() {
                   <span
                     title={s.status}
                     aria-label={time(s.start) + " " + s.status}
-                    className={s.status === "Open" ? "open" : "taken"}
+                    className={s.status.toLowerCase()}
                     key={s.id}
                   >
                     {time(s.start)}
@@ -173,8 +177,8 @@ function App() {
         ))}
       </div>
       <div className="legend">
-        <i /> Open slot <i className="off" /> Booked or elapsed{" "}
-        <span>All times IST</span>
+        <i /> Open <i className="reserved" /> Booked <i className="off" />{" "}
+        Elapsed <span>All times IST</span>
       </div>
     </section>
   );
@@ -182,16 +186,22 @@ function App() {
     <section className="paper register">
       <div className="sectionHead">
         <div>
-          <h2>Appointments</h2>
+          <h2>{page === "Reception" ? "Scheduled visits" : "Appointments"}</h2>
         </div>
-        <span className="count">{visits.length}</span>
+        <span className="count">
+          {register.filter((v) => v.status === "Confirmed").length} active
+        </span>
       </div>
-      {!visits.length ? (
+      {!register.length ? (
         <div className="empty">
           <ClipboardList size={26} />
           <div>
             <strong>No appointments yet</strong>
-            <small>Bookings made during a call will appear here.</small>
+            <small>
+              {page === "Reception"
+                ? dateLabel(day, true)
+                : "The clinic register is empty."}
+            </small>
           </div>
         </div>
       ) : (
@@ -211,7 +221,7 @@ function App() {
               </tr>
             </thead>
             <tbody>
-              {visits.map((v) => (
+              {register.map((v) => (
                 <tr
                   key={
                     v.reference === highlight.reference
@@ -228,7 +238,7 @@ function App() {
                   </td>
                   <td>{v.phone}</td>
                   <td>{v.reference}</td>
-                  <td>{v.status}</td>
+                  <td className={"visitStatus " + v.status}>{v.status}</td>
                 </tr>
               ))}
             </tbody>
@@ -267,8 +277,8 @@ function App() {
         </div>
       </aside>
       <main>
-        <div className="breadcrumb">
-          Workspace <ChevronRight size={13} /> <strong>{page}</strong>
+        <div className="clinicLine">
+          <strong>Aster Clinic</strong>
           <span className="sync">
             <i className={online && !error ? "connected" : ""} />
             {error ? "Refresh needed" : online ? "Synced" : "Reconnecting"}
@@ -276,7 +286,7 @@ function App() {
         </div>
         <header className="pageHead">
           <div>
-            <div className="overline date">
+            <div className="clinicDate">
               {dateLabel(clinicDay(), true)} · {clinicDay().slice(0, 4)}
             </div>
             <h1>
@@ -333,39 +343,10 @@ function App() {
                     Schedule
                   </small>
                 </section>
-                <div className="columns">
-                  <div>{schedule}</div>
-                  <aside className="desk">
-                    <div className="deskCard">
-                      <div className="overline">
-                        <Radio size={15} /> Voice reception
-                      </div>
-                      <div className="lineIcon">
-                        <Headset size={42} strokeWidth={1.25} />
-                      </div>
-                      <h2>Aster receptionist</h2>
-                      <p>
-                        Check availability, book a visit or cancel an
-                        appointment by voice.
-                      </p>
-                      <button onClick={() => setCall(true)}>
-                        Open call companion <ArrowUpRight size={15} />
-                      </button>
-                    </div>
-                    {!visits.length && (
-                      <div className="deskRegister">
-                        <ClipboardList size={18} />
-                        <h3>Visit register</h3>
-                        <strong>No appointments yet</strong>
-                        <p>Bookings from calls appear here.</p>
-                      </div>
-                    )}
-                  </aside>
+                <div className="worklist">
+                  {schedule}
+                  {appointments}
                 </div>
-                {!!visits.length && appointments}
-                {!visits.length && (
-                  <div className="mobileRegister">{appointments}</div>
-                )}
               </>
             )}
             {page === "Doctors" && schedule}
@@ -375,7 +356,11 @@ function App() {
       </main>
       {call && (
         <Suspense fallback={<p role="status">Opening companion…</p>}>
-          <Call close={() => setCall(false)} committed={() => void refresh()} />
+          <Call close={() => setCall(false)} committed={(receipt) => {
+            const scheduledDay=receipt.start.slice(0,10);
+            if (scheduledDay!==day) setDay(scheduledDay);
+            else void refresh();
+          }} />
         </Suspense>
       )}
     </div>

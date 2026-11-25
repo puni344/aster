@@ -868,3 +868,244 @@ th {
     display: block;
   }
 }
+.clinicLine {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #d7dfd4;
+  height: 48px;
+  color: #445c4d;
+  font-size: 13px;
+}
+.clinicLine strong {
+  font-weight: 550;
+}
+.clinicDate {
+  font-size: 13px;
+  color: #53685a;
+  margin-bottom: 4px;
+}
+.pageHead {
+  padding-block: 20px;
+}
+.pageHead h1 {
+  font-size: clamp(34px, 3.4vw, 49px);
+}
+.calling .pageHead .primary {
+  display: none;
+}
+.metrics {
+  padding: 10px 0;
+  margin-bottom: 18px;
+}
+.metrics strong {
+  font:
+    600 24px/1.25 "Segoe UI",
+    sans-serif;
+}
+.worklist {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(235px, 0.78fr);
+  gap: 18px;
+  align-items: start;
+}
+.worklist .register {
+  margin: 0;
+}
+.worklist .register .sectionHead {
+  padding: 16px;
+}
+.worklist .register h2 {
+  font-size: 24px;
+}
+.count {
+  color: #4a6151;
+  font-size: 12px;
+  border: 0;
+}
+.worklist .register thead {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.worklist .register tbody,
+.worklist .register table {
+  display: block;
+}
+.worklist .register tr {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 3px 6px;
+  border-top: 1px solid #dce3da;
+  padding: 12px 16px;
+}
+.worklist .register td {
+  border: 0;
+  padding: 0;
+}
+.worklist .register td:first-child {
+  grid-column: 1/-1;
+  font-weight: 650;
+  font-size: 14px;
+}
+.worklist .register td:nth-child(2) {
+  font-size: 14px;
+  grid-column: 1/-1;
+}
+.worklist .register td:nth-child(3) {
+  font-size: 12px;
+}
+.worklist .register td:nth-child(4) {
+  grid-column: 1;
+  color: #516257;
+  font-family: monospace;
+}
+.worklist .register td:last-child {
+  grid-column: 2;
+  grid-row: 4;
+}
+.visitStatus.Cancelled {
+  color: #825149;
+}
+.visitStatus.Confirmed {
+  color: #206044;
+}
+.slots .booked {
+  background: #f2e4c7;
+  color: #714b19;
+  border-bottom: 2px solid #c89546;
+}
+.slots .past {
+  color: #647069;
+  text-decoration: line-through;
+  background: transparent;
+}
+.legend i.reserved {
+  background: #bd8b41;
+  margin-left: 8px;
+}
+.doctor {
+  grid-template-columns: 34px minmax(125px, 0.8fr) minmax(190px, 1.5fr);
+}
+.companion .callIdentity {
+  align-items: flex-start;
+  padding: 13px 17px;
+}
+.callIdentity canvas {
+  align-self: stretch;
+}
+.transcript .callerLine,
+.transcript .agentLine {
+  padding: 7px 9px;
+  border-left: 2px solid #718f77;
+  line-height: 1.55;
+}
+.transcript .callerLine {
+  border-color: #b08b54;
+  background: #f5f0e6;
+}
+.transcript .draft {
+  color: #58665e;
+}
+.transcript em {
+  font-weight: 400;
+  font-size: 11px;
+}
+.receipt {
+  gap: 4px;
+  border: 1px solid #bfcec0;
+  border-left: 3px solid #467355;
+}
+.receipt > svg {
+  align-self: flex-end;
+  margin-bottom: -22px;
+}
+.receipt > strong {
+  font-size: 15px;
+}
+.receipt > small:last-child {
+  font: 12px monospace;
+  border-top: 1px solid #cfdbcc;
+  width: 100%;
+  padding-top: 7px;
+}
+.companion .transcript {
+  max-height: 48dvh;
+}
+.calling .worklist {
+  grid-template-columns: 1fr;
+}
+.daybar button {
+  min-width: 36px;
+  min-height: 36px;
+}
+@media (max-width: 1090px) {
+  .worklist {
+    grid-template-columns: 1fr;
+  }
+  .worklist .register tbody {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .doctor {
+    grid-template-columns: 30px 1fr;
+  }
+  .clinicLine {
+    height: 34px;
+  }
+  .clinicDate {
+    font-size: 12px;
+  }
+  .rail nav button {
+    min-height: 38px;
+  }
+  .metrics > small {
+    display: block;
+    padding-left: 7px;
+    font-size: 10px;
+  }
+  .worklist .register tbody {
+    grid-template-columns: 1fr;
+  }
+  .doctorInfo small {
+    font-size: 11px;
+  }
+  .daybar button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .companion footer {
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+  }
+}
+main {
+  margin-block: 0;
+}
+.outcomes {
+  padding: 0 16px 10px;
+  overflow-y: auto;
+  max-height: 30dvh;
+  flex-shrink: 0;
+}
+.outcomes .receipt {
+  margin: 6px 0 0;
+}
+.calling .companion .transcript {
+  min-height: 0;
+}
+.callError {
+  padding-block: 5px;
+}
+.worklist .register tr:has(.Cancelled) {
+  background: #f6f6f2;
+}
+.worklist .register tr:has(.Cancelled) td:nth-child(2) {
+  text-decoration: line-through;
+}
+.transcript p b {
+  margin-bottom: 3px;
+}
+.transcript>h3{position:sticky;top:-1px;background:#fbfcf8;padding-bottom:6px;z-index:1}.callIdentity canvas{width:144px;max-width:100%;height:24px}

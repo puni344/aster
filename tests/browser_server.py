@@ -98,7 +98,18 @@ async def event(operation: str):
             "lookup",
         )["slots"][0]
         result = state.invoke("book_appointment", {"slot_id": slot["slot_id"]}, "book")
+    elif operation == "move":
+        state.user("Please reschedule my visit")
+        slot = state.invoke(
+            "check_doctor_availability",
+            {"doctor": "asha", "date": "tomorrow"},
+            "new-options",
+        )["slots"][0]
+        result = state.invoke(
+            "reschedule_appointment", {"slot_id": slot["slot_id"]}, "move"
+        )
     elif operation == "cancel":
+        state.user("Please cancel my visit")
         question = state.invoke("cancel_appointment", {}, "lookup-cancel")
         state.assistant(question["question"])
         state.user("yes")

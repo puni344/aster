@@ -68,6 +68,9 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   await expect(
     dialog.getByText("Fixture partial", { exact: false }),
   ).toHaveCount(0);
+  await second
+    .getByRole("button", { name: "Appointments", exact: true })
+    .click();
   const booked = await (await request.post("/fixture/book")).json();
   expect(booked.receipt.status).toBe("Confirmed");
   await expect(dialog.getByText(booked.receipt.reference)).toBeVisible();
@@ -76,6 +79,7 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
     second.getByRole("row").filter({ hasText: booked.receipt.reference }),
   ).toContainText("Confirmed");
   const day = booked.receipt.start.slice(0, 10);
+  await expect(page.locator(".schedule [aria-label='09:00 Booked']")).toHaveCount(1);
   const snapshot = await (
     await request.get("/api/dashboard?day=" + day)
   ).json();
@@ -87,6 +91,20 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   if (process.env.ASTER_CAPTURE_FIXTURE === "1")
     await page.screenshot({
       path: path.resolve("../docs/evidence/fixture-booked.png"),
+    });
+  const moved = await (await request.post("/fixture/move")).json();
+  expect(moved.receipt.reference).toBe(booked.receipt.reference);
+  expect(moved.receipt.previous_start).toBe(booked.receipt.start);
+  await expect(page.locator(".schedule [aria-label='10:00 Booked']")).toHaveCount(1);
+  await expect(page.locator(".schedule [aria-label='09:00 Booked']")).toHaveCount(0);
+  await expect(dialog.locator(".receipt")).toHaveCount(1);
+  await expect(dialog.locator(".receipt")).toContainText("Rescheduled");
+  await expect(
+    second.getByRole("row").filter({ hasText: booked.receipt.reference }),
+  ).toContainText(moved.receipt.start.slice(11, 16));
+  if (process.env.ASTER_CAPTURE_FIXTURE === "1")
+    await page.screenshot({
+      path: path.resolve("../docs/evidence/review-rescheduled.png"),
     });
   await secondContext.setOffline(true);
   await request.post("/fixture/cancel");
@@ -101,6 +119,13 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   await secondContext.close();
   await dialog.getByRole("button", { name: "End call" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Ended");
+  await dialog.getByRole("button", { name: "Call again" }).click();
+  await expect(dialog.getByRole("status")).toContainText("Listening", {
+    timeout: 35000,
+  });
+  await expect(dialog.locator(".receipt,.callerLine,.agentLine")).toHaveCount(
+    0,
+  );
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
 });
@@ -119,6 +144,6 @@ test("missing provider and denied microphone are actionable", async ({
   await expect(page.getByRole("alert")).toContainText("ELEVENLABS_API_KEY");
   await page.unroute("**/api/dashboard*");
   await page.context().grantPermissions([]);
-  await page.getByRole("button", { name: "Try again" }).click();
+  await page.getByRole("button", { name: "Start a new call" }).click();
   await expect(page.getByRole("alert")).toContainText(/microphone|permission/i);
 });

@@ -110,3 +110,24 @@ def test_identity_processor_accepts_only_committed_stt(tmp_path):
         assert notify.await_count == 2
 
     asyncio.run(check())
+
+
+def test_rtvi_reports_gemini_quota_before_generic_error():
+    from unittest.mock import AsyncMock, Mock
+
+    from pipecat.frames.frames import ErrorFrame
+
+    from backend.voice import GoogleLLMService, ReceptionRTVI
+
+    async def check():
+        rtvi = ReceptionRTVI()
+        rtvi.send_server_message = AsyncMock()
+        frame = ErrorFrame(
+            error="429 RESOURCE_EXHAUSTED", processor=Mock(spec=GoogleLLMService)
+        )
+        await rtvi._send_error_frame(frame)
+        rtvi.send_server_message.assert_awaited_once_with(
+            {"type": "provider-error", "provider": "Gemini", "reason": "quota"}
+        )
+
+    asyncio.run(check())
