@@ -22,7 +22,7 @@ def test_production_graph(tmp_path, monkeypatch):
     asyncio.run(check())
 
 
-def test_smallwebrtc_offer_and_audio():
+def test_smallwebrtc_offer_and_audio(monkeypatch):
     from aiortc import (
         AudioStreamTrack,
         RTCConfiguration,
@@ -33,6 +33,9 @@ def test_smallwebrtc_offer_and_audio():
         SmallWebRTCRequest,
         SmallWebRTCRequestHandler,
     )
+    # Both endpoints are in this process. Avoid routing ICE through a hosted
+    # runner's external VPN or virtual network adapter.
+    monkeypatch.setattr("aioice.ice.get_host_addresses", lambda **_: ["127.0.0.1"])
 
     async def check():
         browser = RTCPeerConnection(RTCConfiguration(iceServers=[]))
@@ -64,10 +67,10 @@ def test_smallwebrtc_offer_and_audio():
             frame = await asyncio.wait_for(peers[0].audio_input_track().recv(), 5)
             assert frame.samples > 0
         finally:
-            await browser.close()
-            await handler.close()
+            await asyncio.wait_for(browser.close(), 5)
+            await asyncio.wait_for(handler.close(), 5)
 
-    asyncio.run(check())
+    asyncio.run(asyncio.wait_for(check(), 30))
 
 
 def test_identity_processor_accepts_only_committed_stt(tmp_path):

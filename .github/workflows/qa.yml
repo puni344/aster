@@ -22,7 +22,7 @@ jobs:
       - run: .venv/Scripts/python -m pip install -r backend/requirements.lock -r tests/requirements-qa.txt
       - run: npm --prefix frontend ci
       - run: .venv/Scripts/ruff check backend tests
-      - run: .venv/Scripts/python -m pytest -q
+      - run: .venv/Scripts/python -m pytest -v -o faulthandler_timeout=90 tests
       - run: npm --prefix frontend run build
       - run: npm --prefix frontend run test:unit
       - run: .venv/Scripts/python -m tests.scan_credentials
