@@ -1,0 +1,8 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert '+919876543210' is None
+     +  where '+919876543210' = <backend.session.Conversation object at 0x00000292B8D1D760>.phone
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:90: AssertionError: assert '+919876543210' is None
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_unrelated_yes_after_phone_echo - Assertion...
+1 failed, 9 deselected in 2.19s

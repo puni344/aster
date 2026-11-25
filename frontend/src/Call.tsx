@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Headset, Mic, MicOff, PhoneOff, X, TicketCheck } from "lucide-react";
 import { PipecatClient } from "@pipecat-ai/client-js";
 import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
-import { dateLabel, time, type CallEvent, type Visit } from "./data";
+import { acceptReceipt, dateLabel, time, type CallEvent, type Visit } from "./data";
 
 interface Line {
   id: number;
@@ -62,16 +62,20 @@ export function Call({
       pc: PipecatClient | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const seen = new Set<string>();
+    const finalTurns = new Set<string>();
+    const receiptRevisions = new Map<string, number>();
+    const controller = new AbortController();
     const ok = () => alive && !ending.current;
     const release = async () => {
       clearTimeout(timer);
+      controller.abort();
+      if (audio.current) audio.current.srcObject = null;
       if (pc) {
         const old = pc;
         pc = undefined;
         client.current = null;
         await old.disconnect().catch(() => {});
       }
-      if (audio.current) audio.current.srcObject = null;
     };
     stop.current = async () => {
       ending.current = true;
@@ -126,7 +130,8 @@ export function Call({
       setBlocked(false);
       setStatus("Preparing call");
       try {
-        const res = await fetch("/api/dashboard");
+        timer = setTimeout(() => fail("Call setup timed out. Check microphone access and try again."), 35000);
+        const res = await fetch("/api/dashboard", { signal: controller.signal });
         if (!res.ok) throw Error("Clinic service is unavailable.");
         const missing = (await res.json()).missing as string[];
         if (!ok()) return;
@@ -186,7 +191,7 @@ export function Call({
                 audio.current
               ) {
                 audio.current.srcObject = new MediaStream([track]);
-                audio.current.play().catch(() => setBlocked(true));
+                audio.current.play().catch(() => { if (ok()) setBlocked(true); });
               }
             },
             onLocalAudioLevel: level,
@@ -200,9 +205,11 @@ export function Call({
             onUserInput: (d) => {
               if (!ok()) return;
               if (!d.final) {
-                setPartial(d.text);
+                if (!finalTurns.has(d.timestamp)) setPartial(d.text);
                 return;
               }
+              if (!d.text.trim()) return;
+              finalTurns.add(d.timestamp);
               setPartial("");
               const key = d.timestamp + d.text;
               if (!seen.has(key)) {
@@ -244,6 +251,7 @@ export function Call({
                 setStatus("Listening");
                 const receipt = d.receipt;
                 if (receipt) {
+                  if (!acceptReceipt(receiptRevisions, receipt)) return;
                   setReceipts((old) => [
                     ...old.filter((v) => v.reference !== receipt.reference),
                     receipt,
@@ -262,6 +270,7 @@ export function Call({
           return;
         }
         setStatus("Connecting");
+        clearTimeout(timer);
         timer = setTimeout(
           () =>
             fail(

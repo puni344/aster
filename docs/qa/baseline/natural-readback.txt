@@ -1,0 +1,16 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert None == '+919876543210'
+     +  where None = <backend.session.Conversation object at 0x0000022EA1A13650>.phone
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:220: AssertionError: assert None == '+919876543210'
+E   AssertionError: assert None == '+919876543210'
+     +  where None = <backend.session.Conversation object at 0x0000022EA1A13DD0>.phone
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:220: AssertionError: assert None == '+919876543210'
+E   AssertionError: assert None == '+919876543210'
+     +  where None = <backend.session.Conversation object at 0x0000022EA1A13920>.phone
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:220: AssertionError: assert None == '+919876543210'
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_natural_terminal_readback[Just to confirm, is your mobile number 9-8-7-6-5-4-3-2-1-0?]
+FAILED tests/test_release.py::test_natural_terminal_readback[Is your phone number 9876543210?]
+FAILED tests/test_release.py::test_natural_terminal_readback[Can you confirm that your number is 9876543210?]
+3 failed, 15 deselected in 0.99s

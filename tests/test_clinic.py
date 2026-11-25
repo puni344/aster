@@ -6,6 +6,7 @@ import pytest
 
 from backend.clinic import Clinic, clinic_now, resolve_day
 from backend.session import Conversation, number
+from tests.consent import perform
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ def test_confirm_only_current_readback(clinic):
     c.assistant("Is 9876543211 correct?")
     c.user("yes")
     assert (
-        c.invoke("book_appointment", {"slot_id": slot}, "b")["error"]
+        perform(c, "book_appointment", {"slot_id": slot}, "b")["error"]
         == "PHONE_NOT_CONFIRMED"
     )
     c.assistant("Is 9876543210 correct?", interrupted=True)
@@ -75,7 +76,7 @@ def test_dates_and_doctors(clinic):
 def test_book_cancel_and_restart(clinic):
     c = confirm(Conversation(clinic))
     slot = choice(c)
-    b = lambda req: c.invoke("book_appointment", {"slot_id": slot}, req)
+    b = lambda req: perform(c, "book_appointment", {"slot_id": slot}, req)
     receipt = b("one")["receipt"]
     assert (
         receipt["reference"]
@@ -124,7 +125,7 @@ def test_competition(clinic):
         call = confirm(Conversation(clinic), "987654321" + digit)
         slot = choice(call)
         ready.wait()
-        return call.invoke("book_appointment", {"slot_id": slot}, "book")
+        return perform(call, "book_appointment", {"slot_id": slot}, "book")
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         results = list(pool.map(race, ["0", "1"]))
@@ -136,8 +137,8 @@ def test_competition(clinic):
 def test_multiple_and_past(clinic):
     call = confirm(Conversation(clinic))
     for doctor in ("asha", "arjun"):
-        assert "receipt" in call.invoke(
-            "book_appointment", {"slot_id": choice(call, doctor)}, doctor
+        assert "receipt" in perform(
+            call, "book_appointment", {"slot_id": choice(call, doctor)}, doctor
         )
     assert (
         call.invoke("cancel_appointment", {}, "cancel")["error"]
@@ -150,13 +151,13 @@ def test_multiple_and_past(clinic):
             ((clinic_now() - timedelta(days=1)).isoformat(), slot),
         )
     assert (
-        call.invoke("book_appointment", {"slot_id": slot}, "past")["error"]
+        perform(call, "book_appointment", {"slot_id": slot}, "past")["error"]
         == "SLOT_UNAVAILABLE"
     )
     assert len(clinic.changes(0)) == 2
     call.closed = True
     assert (
-        call.invoke("book_appointment", {"slot_id": slot}, "late")["error"]
+        perform(call, "book_appointment", {"slot_id": slot}, "late")["error"]
         == "CALL_ENDED"
     )
 
@@ -171,6 +172,6 @@ def test_rollback(clinic):
     import sqlite3
 
     with pytest.raises(sqlite3.IntegrityError):
-        call.invoke("book_appointment", {"slot_id": slot}, "failed")
+        perform(call, "book_appointment", {"slot_id": slot}, "failed")
     assert clinic.changes(0) == []
     assert clinic.owned(call.phone) == []

@@ -1,0 +1,7 @@
+F.                                                                       [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert ('receipt' in {'error': 'CONFIRM_SLOT', 'question': 'Should I book Dr Asha Menon on 26 November at 09:00?', 'instruction': 'Say the question exactly. Wait for the caller to confirm before calling again.'}) == True
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:243: AssertionError: assert ('receipt' in {'error': 'CONFIRM_SLOT', 'question': 'Should I book Dr Asha Menon on 26 November at 09:00?', 'instruction': 'Say the question exactly. Wait for the caller to confirm before calling again.'}) == True
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_split_final_vote[That is correct.-True] - ...
+1 failed, 1 passed, 19 deselected in 0.96s

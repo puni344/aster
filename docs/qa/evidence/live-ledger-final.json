@@ -1,0 +1,29 @@
+{
+  "reference": "AS-FEC6CFEF",
+  "dashboard_slot": {
+    "id": "asha-2026-11-26-9",
+    "start": "2026-11-26T09:00:00+05:30",
+    "status": "Open"
+  },
+  "dashboard_visit": {
+    "reference": "AS-FEC6CFEF",
+    "status": "Cancelled",
+    "phone": "\u2022\u2022\u2022\u2022 3210",
+    "start": "2026-11-26T09:00:00+05:30",
+    "slot_id": "asha-2026-11-26-9",
+    "name": "Dr Asha Menon",
+    "specialty": "General medicine"
+  },
+  "sqlite_events": [
+    [
+      1,
+      "AS-FEC6CFEF",
+      "Confirmed"
+    ],
+    [
+      2,
+      "AS-FEC6CFEF",
+      "Cancelled"
+    ]
+  ]
+}

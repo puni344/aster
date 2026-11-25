@@ -1,0 +1,45 @@
+FFFFFF.F                                                                 [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert None == 'CONFIRM_SLOT'
+     +  where None = <built-in method get of dict object at 0x000001E46F57F040>('error')
+     +    where <built-in method get of dict object at 0x000001E46F57F040> = {'receipt': {'reference': 'AS-686449F4', 'status': 'Confirmed', 'phone': '•••• 3210', 'start': '2026-11-26T09:00:00+05:30', ...}}.get
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:25: AssertionError: assert None == 'CONFIRM_SLOT'
+E   AssertionError: assert '+919876543211' == 'invalid'
+      
+      - invalid
+      + +919876543211
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:47: AssertionError: assert '+919876543211' == 'invalid'
+E   AssertionError: assert '+919898765432' == 'invalid'
+      
+      - invalid
+      + +919898765432
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:47: AssertionError: assert '+919898765432' == 'invalid'
+E   AssertionError: assert '+917776543210' == 'invalid'
+      
+      - invalid
+      + +917776543210
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:47: AssertionError: assert '+917776543210' == 'invalid'
+E   AttributeError: 'NoneType' object has no attribute 'values'
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\backend\session.py:183: AttributeError: 'NoneType' object has no attribute 'values'
+E   AttributeError: 'list' object has no attribute 'values'
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\backend\session.py:183: AttributeError: 'list' object has no attribute 'values'
+E   AssertionError: assert {'slots': [{'...rnatives': []} == {'error': 'INVALID_ARGUMENT'}
+      
+      Left contains 2 more items:
+      {'alternatives': [],
+       'slots': [{'doctor': 'Dr Asha Menon',
+                  'slot_id': 'asha-2026-11-25-14',
+                  'start': '2026-11-25T14:00:00+05:30'},
+                 {'doctor': 'Dr Asha Menon',...
+      
+      ...Full output truncated, use '-vv' to show
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:53: AssertionError: assert {'slots': [{'...rnatives': []} == {'error': 'INVALID_ARGUMENT'}
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_consent_bound_to_exact_offered_slot - Asse...
+FAILED tests/test_release.py::test_ambiguous_numbers_rejected[9876543210 or 9876543211]
+FAILED tests/test_release.py::test_ambiguous_numbers_rejected[double 98 765432]
+FAILED tests/test_release.py::test_ambiguous_numbers_rejected[double triple seven 6543210]
+FAILED tests/test_release.py::test_malformed_arguments_are_recoverable[None]
+FAILED tests/test_release.py::test_malformed_arguments_are_recoverable[args1]
+FAILED tests/test_release.py::test_malformed_arguments_are_recoverable[args3]
+7 failed, 1 passed in 3.71s

@@ -1,0 +1,7 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   KeyError: 'error'
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:100: KeyError: 'error'
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_unrelated_assistant_turn_invalidates_slot_vote
+1 failed, 10 deselected in 1.15s

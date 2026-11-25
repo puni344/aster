@@ -1,0 +1,10 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert 'Confirmed' == 'Cancelled'
+      
+      - Cancelled
+      + Confirmed
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:75: AssertionError: assert 'Confirmed' == 'Cancelled'
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_lost_ack_reconciles_after_restart - Assert...
+1 failed, 8 deselected in 0.76s

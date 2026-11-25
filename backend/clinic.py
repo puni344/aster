@@ -1,5 +1,6 @@
 """SQLite owns the schedule and its monotonic change journal."""
 
+import hashlib
 import json
 import re
 import sqlite3
@@ -42,6 +43,19 @@ def public(row):
     return result
 
 
+def latest_receipt(db, reference, phone):
+    row = db.execute(
+        VISITS + " WHERE a.reference=? AND a.phone=?", (reference, phone)
+    ).fetchone()
+    if not row:
+        return None
+    result = public(row)
+    result["revision"] = db.execute(
+        "SELECT coalesce(max(id),0) FROM events WHERE reference=?", (reference,)
+    ).fetchone()[0]
+    return result
+
+
 class Clinic:
     def __init__(self, path):
         self.path = path
@@ -54,6 +68,7 @@ class Clinic:
                 phone TEXT NOT NULL,status TEXT CHECK(status IN ('Confirmed','Cancelled')),created TEXT,cancelled TEXT);
             CREATE UNIQUE INDEX IF NOT EXISTS held_slot ON appointments(slot_id) WHERE status='Confirmed';
             CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY, reference TEXT, status TEXT, created TEXT);
+            CREATE INDEX IF NOT EXISTS events_reference ON events(reference,id);
             CREATE TABLE IF NOT EXISTS requests(id TEXT PRIMARY KEY, result TEXT NOT NULL);
             """)
             db.executemany("INSERT OR IGNORE INTO doctors VALUES(?,?,?,?)", DOCTORS)
@@ -206,10 +221,7 @@ class Clinic:
 
     def receipt(self, reference, phone):
         with self.transaction() as db:
-            row = db.execute(
-                VISITS + " WHERE a.reference=? AND a.phone=?", (reference, phone)
-            ).fetchone()
-            return public(row) if row else None
+            return latest_receipt(db, reference, phone)
 
     def owned(self, phone):
         with self.transaction() as db:
@@ -238,8 +250,20 @@ class Clinic:
             previous = db.execute(
                 "SELECT result FROM requests WHERE id=?", (request,)
             ).fetchone()
+            signature = hashlib.sha256(
+                json.dumps([action, target, phone, reference, source]).encode()
+            ).hexdigest()
             if previous:
-                return json.loads(previous[0])
+                saved = json.loads(previous[0])
+                if saved.get("signature") != signature:
+                    return {"error": "REQUEST_CONFLICT"}
+                original = saved["receipt"]
+                current = latest_receipt(db, original["reference"], phone)
+                if not current:
+                    return {"error": "APPOINTMENT_NOT_FOUND"}
+                if current["revision"] != original.get("revision"):
+                    return {"receipt": current}
+                return {"receipt": original}
             previous_start = None
             if action in {"book", "move"}:
                 slot = db.execute(
@@ -309,18 +333,25 @@ class Clinic:
                     return {"error": "APPOINTMENT_NOT_FOUND"}
             else:
                 raise ValueError("Unknown appointment action")
-            receipt = public(
-                db.execute(VISITS + " WHERE a.reference=?", (ref,)).fetchone()
-            )
-            if previous_start:
-                receipt["previous_start"] = previous_start
             if changed:
                 db.execute(
                     "INSERT INTO events(reference,status,created) VALUES(?,?,?)",
-                    (ref, "Rescheduled" if previous_start else receipt["status"], now),
+                    (
+                        ref,
+                        "Rescheduled"
+                        if previous_start
+                        else "Cancelled"
+                        if action == "cancel"
+                        else "Confirmed",
+                        now,
+                    ),
                 )
+            receipt = latest_receipt(db, ref, phone)
+            if previous_start:
+                receipt["previous_start"] = previous_start
             result = {"receipt": receipt}
             db.execute(
-                "INSERT INTO requests VALUES(?,?)", (request, json.dumps(result))
+                "INSERT INTO requests VALUES(?,?)",
+                (request, json.dumps({**result, "signature": signature})),
             )
         return result

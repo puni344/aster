@@ -1,0 +1,2 @@
+Lookup arguments: {'date': '2026-11-26', 'specialty': 'cardiology'}
+Gemini invoked check_doctor_availability ; returned 3 slots

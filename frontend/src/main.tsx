@@ -146,6 +146,7 @@ function App() {
         </div>
       </div>
       <div className="roster">
+        {!shown.length && <p className="empty">No doctors match this schedule.</p>}
         {shown.map((d, i) => (
           <div className="doctor" key={d.id}>
             <div className={"initials tint" + (i % 3)}>
@@ -161,6 +162,7 @@ function App() {
             </div>
             <div className="slotArea">
               <div className="slots">
+                {!d.slots.length && <small>No slots scheduled</small>}
                 {d.slots.map((s) => (
                   <span
                     title={s.status}
@@ -280,8 +282,8 @@ function App() {
         <div className="clinicLine">
           <strong>Aster Clinic</strong>
           <span className="sync">
-            <i className={online && !error ? "connected" : ""} />
-            {error ? "Refresh needed" : online ? "Synced" : "Reconnecting"}
+            <i className={online && !error && state?.date === day ? "connected" : ""} />
+            {error ? "Refresh needed" : !online ? "Reconnecting" : state?.date === day ? "Synced" : "Loading"}
           </span>
         </div>
         <header className="pageHead">

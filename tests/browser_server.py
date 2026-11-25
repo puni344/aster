@@ -1,8 +1,10 @@
 """Loopback-only Playwright fixture. Never import this module in the application."""
 
 import os
+import sqlite3
 import tempfile
-from contextlib import asynccontextmanager
+import time
+from contextlib import asynccontextmanager, closing
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -20,6 +22,7 @@ from pipecat.workers.runner import WorkerRunner
 
 from backend import main, voice
 from backend.session import Conversation
+from tests.consent import perform
 
 running = {}
 
@@ -74,6 +77,18 @@ def audio():
     return {"frames": running.get("audio", 0)}
 
 
+@app.get("/fixture/ledger")
+def ledger():
+    with closing(sqlite3.connect(os.environ["ASTER_DB"])) as db:
+        db.row_factory = sqlite3.Row
+        return [
+            dict(row)
+            for row in db.execute(
+                "SELECT reference,slot_id,status,substr(phone,-4) AS suffix FROM appointments ORDER BY created"
+            )
+        ]
+
+
 @app.post("/fixture/{operation}")
 async def event(operation: str):
     worker = running["worker"]
@@ -97,7 +112,22 @@ async def event(operation: str):
             {"doctor": "asha", "date": "tomorrow"},
             "lookup",
         )["slots"][0]
-        result = state.invoke("book_appointment", {"slot_id": slot["slot_id"]}, "book")
+        result = perform(
+            state, "book_appointment", {"slot_id": slot["slot_id"]}, "book"
+        )
+        running["initial_receipt"] = result["receipt"]
+    elif operation == "delayed-book-result":
+        await worker.rtvi.send_server_message(
+            {"type": "tool-end", "receipt": running["initial_receipt"]}
+        )
+        await worker.rtvi.send_server_message(
+            {
+                "type": "assistant-final",
+                "text": "End of delayed result fixture",
+                "interrupted": False,
+            }
+        )
+        return {"sent": True}
     elif operation == "move":
         state.user("Please reschedule my visit")
         slot = state.invoke(
@@ -105,8 +135,8 @@ async def event(operation: str):
             {"doctor": "asha", "date": "tomorrow"},
             "new-options",
         )["slots"][0]
-        result = state.invoke(
-            "reschedule_appointment", {"slot_id": slot["slot_id"]}, "move"
+        result = perform(
+            state, "reschedule_appointment", {"slot_id": slot["slot_id"]}, "move"
         )
     elif operation == "cancel":
         state.user("Please cancel my visit")
@@ -116,11 +146,12 @@ async def event(operation: str):
         result = state.invoke("cancel_appointment", {}, "cancel")
     else:
         return {}
+    commit_observed_ms = time.time_ns() // 1_000_000
     await worker.rtvi.send_server_message(
         {"type": "assistant-final", "text": "Fixture transcript", "interrupted": False}
     )
     await worker.rtvi.send_server_message({"type": "tool-end", **result})
-    return result
+    return {**result, "commit_observed_ms": commit_observed_ms}
 
 
 app.mount("/", main.app)

@@ -1,0 +1,6 @@
+phone guard DETECTED 3 failed, 5 passed in 1.54s
+selected slot agreement DETECTED 1 failed in 1.48s
+past slot guard DETECTED 1 failed in 1.79s
+wrong cancellation owner DETECTED 1 failed in 2.01s
+journal duplication DETECTED 1 failed in 0.82s
+lost acknowledgement DETECTED 1 failed in 2.22s

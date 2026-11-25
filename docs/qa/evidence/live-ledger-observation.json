@@ -1,0 +1,18 @@
+{
+  "appointments": [
+    {
+      "reference": "AS-FEC6CFEF",
+      "status": "Confirmed",
+      "start": "2026-11-26T09:00:00+05:30",
+      "name": "Dr Asha Menon",
+      "suffix": "3210"
+    }
+  ],
+  "journal": [
+    {
+      "id": 1,
+      "reference": "AS-FEC6CFEF",
+      "status": "Confirmed"
+    }
+  ]
+}

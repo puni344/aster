@@ -1,0 +1,57 @@
+Assistant turn 1 Aster
+Hello, you've reached Aster Clinic's AI receptionist. How can I help you today?
+Latest caller transcript: 
+Synthetic caller clip: book
+Assistant turn 2 Aster
+Could you please state your Indian mobile number?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 3 Aster
+Just to confirm, is your mobile number 9-8-7-6-5-4-3-2-1-0?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 4 Aster
+Could you please say your Indian mobile number clearly?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 5 Aster
+Just to be sure, is your mobile number 9-8-7-6-5-4-3-2-1-0?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 6 Aster
+Please tell me your Indian mobile number again.
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 7 Aster
+Just to confirm, is your mobile number 9-8-7-6-5-4-3-2-1-0?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 8 Aster
+Could you please say your Indian mobile number digit by digit?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 9 Aster
+Is your mobile number 9-8-7-6-5-4-3-2-1-0 correct?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: yes
+Observed outcome: No committed booking observed
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'No committed booking observed'
+- 'Live cancellation observed'
+
+    at file:///C:/Users/punit/OneDrive/Documents/ChatGPT/sde/frontend/tests/live-book-cancel.mjs:75:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'No committed booking observed',
+  expected: 'Live cancellation observed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

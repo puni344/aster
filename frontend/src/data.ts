@@ -1,4 +1,5 @@
 export interface Visit {
+  revision?: number;
   previous_start?: string;
   reference: string;
   status: "Confirmed" | "Cancelled";
@@ -6,6 +7,14 @@ export interface Visit {
   start: string;
   name: string;
   specialty: string;
+}
+
+export function acceptReceipt(seen: Map<string, number>, receipt: Pick<Visit, "reference" | "revision">) {
+  if (receipt.revision === undefined) return true;
+  const last = seen.get(receipt.reference) ?? -1;
+  if (receipt.revision <= last) return false;
+  seen.set(receipt.reference, receipt.revision);
+  return true;
 }
 export type CallEvent =
   | { type: "tool-start" }

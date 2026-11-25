@@ -1,0 +1,14 @@
+
+> aster-reception@1.0.0 test:unit
+> node --test unit/*.test.mjs
+
+✔ out-of-order and duplicated receipts cannot supersede a new revision (0.7014ms)
+✔ the desk displays midnight and noon in clinic time (14.6172ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 135.8742

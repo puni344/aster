@@ -1,0 +1,29 @@
+
+> aster-reception@1.0.0 test
+> playwright test
+
+[WebServer] 2026-11-25 17:14:57.026 | INFO     | pipecat:<module>:54 - \u14da\u160f\u15e2 Pipecat 1.17.0 (Python 3.12.16 (main, Nov 11 2026, 00:20:04) [MSC v.1944 64 bit (AMD64)]) \u14da\u160f\u15e2
+[WebServer] 2026-11-25 17:14:58.869 | DEBUG    | pipecat.transports.smallwebrtc.connection:<module>:80 - [SCTP] USERDATA_MAX_LENGTH set to 1100
+[WebServer] INFO:     Started server process [24364]
+[WebServer] INFO:     Waiting for application startup.
+[WebServer] INFO:     Application startup complete.
+[WebServer] INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+
+Running 7 tests using 1 worker
+
+(node:15156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\reception.spec.ts:5:1 › schedule filters, date controls, keyboard navigation and mobile width (975ms)
+Fixture commit observed to second-tab assertion (ms) 920
+[WebServer] 2026-11-25 17:15:09.895 | WARNING  | pipecat.transports.smallwebrtc.transport:read_audio_frame:462 - Media stream error while reading the audio; clearing track.
+Fixture hangup to Ended assertion (ms) 98
+[WebServer] 2026-11-25 17:15:10.801 | WARNING  | pipecat.transports.smallwebrtc.transport:read_audio_frame:462 - Media stream error while reading the audio; clearing track.
+  ok 2 tests\reception.spec.ts:34:1 › browser WebRTC, mute, structured receipts and committed SSE snapshots (8.1s)
+  ok 3 tests\reception.spec.ts:151:1 › missing provider and denied microphone are actionable (761ms)
+[WebServer] 2026-11-25 17:15:13.593 | WARNING  | pipecat.transports.smallwebrtc.transport:read_audio_frame:462 - Media stream error while reading the audio; clearing track.
+  ok 4 tests\reception.spec.ts:169:1 › late interim after a final does not reappear (2.0s)
+  ok 5 tests\reception.spec.ts:184:1 › an unanswered microphone prompt times out and allows a fresh call (746ms)
+  ok 6 tests\reception.spec.ts:198:1 › empty roster and initial HTTP failure remain explicit (572ms)
+  ok 7 tests\reception.spec.ts:213:1 › closing during setup ignores the late permission result (847ms)
+
+  7 passed (21.1s)

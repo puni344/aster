@@ -1,5 +1,6 @@
 import path from "node:path";
 import { test, expect } from "@playwright/test";
+const captureDir = process.env.ASTER_CAPTURE_DIR || "../docs/evidence";
 
 test("schedule filters, date controls, keyboard navigation and mobile width", async ({
   page,
@@ -73,11 +74,15 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
     .click();
   const booked = await (await request.post("/fixture/book")).json();
   expect(booked.receipt.status).toBe("Confirmed");
+  expect(await (await request.get("/fixture/ledger")).json()).toEqual([{
+    reference: booked.receipt.reference, slot_id: booked.receipt.slot_id, status: "Confirmed", suffix: "3210",
+  }]);
   await expect(dialog.getByText(booked.receipt.reference)).toBeVisible();
   await expect(dialog.getByText("Fixture transcript")).toBeVisible();
   await expect(
     second.getByRole("row").filter({ hasText: booked.receipt.reference }),
   ).toContainText("Confirmed");
+  console.log("Fixture commit observed to second-tab assertion (ms)", Date.now() - booked.commit_observed_ms);
   const day = booked.receipt.start.slice(0, 10);
   await expect(page.locator(".schedule [aria-label='09:00 Booked']")).toHaveCount(1);
   const snapshot = await (
@@ -90,11 +95,14 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   ).toBeTruthy();
   if (process.env.ASTER_CAPTURE_FIXTURE === "1")
     await page.screenshot({
-      path: path.resolve("../docs/evidence/fixture-booked.png"),
+      path: path.resolve(captureDir, "fixture-booked.png"),
     });
   const moved = await (await request.post("/fixture/move")).json();
   expect(moved.receipt.reference).toBe(booked.receipt.reference);
   expect(moved.receipt.previous_start).toBe(booked.receipt.start);
+  expect(await (await request.get("/fixture/ledger")).json()).toEqual([{
+    reference: booked.receipt.reference, slot_id: moved.receipt.slot_id, status: "Confirmed", suffix: "3210",
+  }]);
   await expect(page.locator(".schedule [aria-label='10:00 Booked']")).toHaveCount(1);
   await expect(page.locator(".schedule [aria-label='09:00 Booked']")).toHaveCount(0);
   await expect(dialog.locator(".receipt")).toHaveCount(1);
@@ -104,10 +112,13 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   ).toContainText(moved.receipt.start.slice(11, 16));
   if (process.env.ASTER_CAPTURE_FIXTURE === "1")
     await page.screenshot({
-      path: path.resolve("../docs/evidence/review-rescheduled.png"),
+      path: path.resolve(captureDir, "review-rescheduled.png"),
     });
   await secondContext.setOffline(true);
   await request.post("/fixture/cancel");
+  expect(await (await request.get("/fixture/ledger")).json()).toEqual([{
+    reference: booked.receipt.reference, slot_id: moved.receipt.slot_id, status: "Cancelled", suffix: "3210",
+  }]);
   await secondContext.setOffline(false);
   await second.bringToFront();
   await expect(
@@ -116,9 +127,16 @@ test("browser WebRTC, mute, structured receipts and committed SSE snapshots", as
   await expect(
     dialog.locator(".receipt").filter({ hasText: "Cancelled" }),
   ).toBeVisible();
+  await request.post("/fixture/delayed-book-result");
+  await expect(dialog.getByText("End of delayed result fixture")).toBeVisible();
+  await expect(dialog.locator(".receipt")).toContainText("Cancelled");
+  if (process.env.ASTER_CAPTURE_FIXTURE === "1")
+    await page.screenshot({ path: path.resolve(captureDir, "fixture-cancelled.png") });
   await secondContext.close();
+  const endStart = Date.now();
   await dialog.getByRole("button", { name: "End call" }).click();
   await expect(dialog.getByRole("status")).toHaveText("Ended");
+  console.log("Fixture hangup to Ended assertion (ms)", Date.now() - endStart);
   await dialog.getByRole("button", { name: "Call again" }).click();
   await expect(dialog.getByRole("status")).toContainText("Listening", {
     timeout: 35000,
@@ -146,4 +164,66 @@ test("missing provider and denied microphone are actionable", async ({
   await page.context().grantPermissions([]);
   await page.getByRole("button", { name: "Start a new call" }).click();
   await expect(page.getByRole("alert")).toContainText(/microphone|permission/i);
+});
+
+test("late interim after a final does not reappear", async ({page, context, request}) => {
+  await context.grantPermissions(["microphone"]);
+  await page.goto("/");
+  await page.getByRole("button", {name: "Try call", exact:true}).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("status")).toContainText("Listening", {timeout:35000});
+  await request.post("/fixture/final");
+  await expect(dialog.getByText("Fixture final")).toBeVisible();
+  await request.post("/fixture/partial");
+  await request.post("/fixture/final");
+  await expect(dialog.getByText("Fixture final")).toHaveCount(1);
+  await expect(dialog.locator(".callerLine.draft")).toHaveCount(0);
+  await dialog.getByRole("button", {name:"End call"}).click();
+});
+
+test("an unanswered microphone prompt times out and allows a fresh call", async ({page}) => {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => new Promise(() => {});
+  });
+  await page.goto("/");
+  await page.clock.install();
+  await page.getByRole("button", {name:"Try call",exact:true}).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Requesting microphone");
+  await page.clock.fastForward(36000);
+  await expect(page.getByText("Call setup timed out.", {exact:false})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Start a new call"})).toBeVisible();
+});
+
+
+test("empty roster and initial HTTP failure remain explicit", async ({page}) => {
+  await page.route("**/api/dashboard?day=*", route => route.fulfill({status:503,body:"Offline"}));
+  await page.goto("/");
+  await expect(page.getByRole("alert")).toContainText("could not be loaded");
+  await expect(page.locator(".sync")).toContainText("Refresh needed");
+  await page.unroute("**/api/dashboard?day=*");
+  await page.route("**/api/dashboard?day=*", async route => {
+    const day = new URL(route.request().url()).searchParams.get("day");
+    await route.fulfill({json:{date:day,today:day,doctors:[],appointments:[],revision:0,missing:[]}});
+  });
+  await page.getByRole("button",{name:"Retry",exact:true}).click();
+  await expect(page.getByText("No doctors match this schedule.")).toBeVisible();
+  await expect(page.getByText("No appointments yet")).toBeVisible();
+});
+
+test("closing during setup ignores the late permission result", async ({page}) => {
+  await page.addInitScript(() => {
+    navigator.mediaDevices.getUserMedia = () => new Promise(() => {});
+  });
+  await page.goto("/");
+  const start = page.getByRole("button",{name:"Try call",exact:true});
+  await start.click();
+  await expect(page.getByRole("dialog").getByRole("status")).toContainText("Requesting microphone");
+  await page.getByRole("button",{name:"Close call companion"}).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(start).toBeEnabled();
+  await start.click();
+  await expect(page.getByRole("dialog")).toHaveCount(1);
+  await expect(page.locator(".receipt,.callerLine,.agentLine")).toHaveCount(0);
+  await page.getByRole("button",{name:"End call",exact:true}).click();
+  await expect(page.getByRole("dialog").getByRole("status")).toHaveText("Ended");
 });

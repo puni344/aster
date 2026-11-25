@@ -1,0 +1,7 @@
+Click to remote track attached (ms): 5053
+Remote audio peak: 0.158416748046875
+Committed caller transcript: Caller
+Please check availability with Dr. Arjun Rao tomorrow.
+Response: Call could not continue
+
+Gemini reached its usage limit. Start a new call when quota is available.

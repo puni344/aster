@@ -107,6 +107,8 @@ def test_identity_processor_accepts_only_committed_stt(tmp_path):
         state.assistant("Is 9876543210 correct?")
         await send(committed("yes"))
         assert state.masked.endswith("3210")
+        await send(committed("9876543210"))
+        assert state.masked.endswith("3210")
         assert notify.await_count == 2
 
     asyncio.run(check())

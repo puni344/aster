@@ -1,8 +1,11 @@
 """Opt-in single-inference provider smoke. Run as a module, outside pytest."""
 
+import argparse
 import asyncio
 import os
+import sqlite3
 import tempfile
+from contextlib import closing
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -23,8 +26,15 @@ from backend.voice import (
     tool_schema,
 )
 
+LOOKUPS = [
+    ("Please check Dr Asha Menon's actual availability tomorrow.", "asha"),
+    ("Could I hear tomorrow's cardiology times?", "arjun"),
+    ("When could I see the ENT doctor tomorrow?", "dev"),
+]
 
-async def main():
+
+async def main(case=0):
+    utterance, expected_doctor = LOOKUPS[case]
     load_dotenv()
     logger.remove()
     with tempfile.TemporaryDirectory() as folder:
@@ -32,7 +42,7 @@ async def main():
         llm = GoogleLLMService(
             api_key=os.environ["GEMINI_API_KEY"],
             settings=GoogleLLMService.Settings(
-                model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+                model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
                 system_instruction=PROMPT + " Clinic date: " + str(clinic_now().date()),
             ),
         )
@@ -40,7 +50,7 @@ async def main():
             [
                 {
                     "role": "user",
-                    "content": "Please check Dr Asha Menon's actual availability tomorrow.",
+                    "content": utterance,
                 }
             ],
             tools=tool_schema(),
@@ -50,8 +60,10 @@ async def main():
             Pipeline([pair.user(), llm, pair.assistant()]), enable_rtvi=False
         )
         result = {}
+        invoked = []
 
         async def handle(params):
+            invoked.append(params.function_name)
             print(
                 "Lookup arguments:",
                 {
@@ -100,9 +112,24 @@ async def main():
         runner = WorkerRunner(handle_sigint=False)
         await runner.add_workers(worker)
         await asyncio.wait_for(runner.run(), 45)
-        if not result.get("slots"):
+        if invoked != ["check_doctor_availability"] or not result.get("slots"):
             raise SystemExit("Live tool call not verified")
+        from backend.clinic import resolve_day
+
+        with closing(sqlite3.connect(call.clinic.path)) as db:
+            expected = db.execute(
+                "SELECT id FROM slots WHERE doctor=? AND substr(start,1,10)=? ORDER BY start LIMIT 3",
+                (expected_doctor, str(resolve_day("tomorrow"))),
+            ).fetchall()
+            actual = [(slot["slot_id"],) for slot in result["slots"]]
+            if (
+                actual != expected
+                or db.execute("SELECT count(*) FROM appointments").fetchone()[0]
+            ):
+                raise SystemExit("Live lookup disagreed with the fixture ledger")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--case", type=int, choices=range(len(LOOKUPS)), default=0)
+    asyncio.run(main(parser.parse_args().case))

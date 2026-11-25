@@ -1,0 +1,28 @@
+Assistant turn; has text: True interrupted: False challenge: None visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: False visit approved: False
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: False visit approved: False
+Aster tool: check_doctor_availability result: ok slots: 1
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Aster tool: book_appointment result: PHONE_NOT_CONFIRMED slots: 0
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Assistant turn; has text: True interrupted: False challenge: None visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: False visit approved: False
+Assistant turn; has text: True interrupted: False challenge: phone visit approved: False
+Committed caller turn; previous challenge: phone identity confirmed: True visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: True visit approved: False
+Aster tool: book_appointment result: CONFIRM_SLOT slots: 0
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Assistant turn; has text: True interrupted: False challenge: slot visit approved: False
+Committed caller turn; previous challenge: slot identity confirmed: True visit approved: True
+Committed caller turn; previous challenge: None identity confirmed: True visit approved: True
+Aster tool: book_appointment result: ok slots: 0
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Assistant turn; has text: True interrupted: False challenge: None visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: True visit approved: False
+Aster tool: cancel_appointment result: CONFIRMATION_REQUIRED slots: 0
+Assistant turn; has text: False interrupted: False challenge: None visit approved: False
+Assistant turn; has text: True interrupted: False challenge: cancel visit approved: False
+Committed caller turn; previous challenge: cancel identity confirmed: True visit approved: False
+Committed caller turn; previous challenge: None identity confirmed: True visit approved: False
+Aster tool: cancel_appointment result: ok slots: 0

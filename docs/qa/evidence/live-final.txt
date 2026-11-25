@@ -1,0 +1,43 @@
+Assistant turn 1 Aster
+Hello, you've reached Aster Clinic's AI receptionist. How can I help you today?
+Latest caller transcript: 
+Synthetic caller clip: book
+Assistant turn 2 Aster
+To complete your booking, could you please tell me your Indian mobile number?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: phone
+Assistant turn 3 Aster
+Let me read that back: 9-8-7-6-5-4-3-2-1-0. Is that correct?
+Latest caller transcript: CallerMy mobile number is 9876543210.
+Synthetic caller clip: yes
+Assistant turn 4 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Latest caller transcript: CallerThat is correct.
+Synthetic caller clip: yes
+Assistant turn 5 Aster
+Your appointment with Dr Asha Menon is confirmed for tomorrow, 26 November, at 9:00 AM. Your booking reference is AS-FEC6CFEF.
+Latest caller transcript: CallerThat is correct.
+Receipt: Confirmed
+Dr Asha Menon
+General medicine
+26 Nov · 09:00 IST
+AS-FEC6CFEF
+Synthetic caller clip: cancel
+Assistant turn 6 Aster
+Should I cancel your appointment with Dr Asha Menon on 26 November at 09:00?
+Latest caller transcript: CallerPlease cancel the appointment you just booked with Dr. Asha Menon.
+Receipt: Confirmed
+Dr Asha Menon
+General medicine
+26 Nov · 09:00 IST
+AS-FEC6CFEF
+Synthetic caller clip: yes
+Assistant turn 7 Aster
+Your appointment with Dr Asha Menon on 26 November at 9:00 AM has been successfully cancelled.
+Latest caller transcript: CallerThat is correct.
+Receipt: Cancelled
+Dr Asha Menon
+General medicine
+26 Nov · 09:00 IST
+AS-FEC6CFEF
+Observed outcome: Live cancellation observed

@@ -1,0 +1,10 @@
+[
+  {"id":"VOICE-01","goal":"Book tomorrow with Asha","phone_turns":["nine eight seven six five four three two one zero"],"readback":"9876543210","reply":"yes","slot_reply":"yes please","permitted":"book","rows":1},
+  {"id":"VOICE-02","goal":"Decline incorrect phone readback","phone_turns":["9876543210"],"readback":"9876543211","reply":"no, wait","slot_reply":"yes","permitted":"lookup","rows":0},
+  {"id":"VOICE-03","goal":"Correct the complete number","phone_turns":["9876543211","Sorry, my number is 9876543210"],"readback":"9876543210","reply":"yes that is correct","slot_reply":"correct","permitted":"book","rows":1},
+  {"id":"VOICE-04","goal":"Withdraw after hearing slot","phone_turns":["9876543210"],"readback":"9876543210","reply":"yes","slot_reply":"No, wait.","permitted":"lookup","rows":0},
+  {"id":"VOICE-05","goal":"Interrupted slot readback","phone_turns":["9876543210"],"readback":"9876543210","reply":"yes","slot_reply":"yes","interrupted":true,"permitted":"lookup","rows":0},
+  {"id":"VOICE-06","goal":"Ambiguous phone confirmation","phone_turns":["9876543210"],"readback":"9876543210","reply":"maybe","slot_reply":"yes","permitted":"lookup","rows":0},
+  {"id":"VOICE-07","goal":"Caller has supplied two possible numbers","phone_turns":["9876543211 or 9876543210"],"readback":"9876543210","reply":"yes","slot_reply":"yes","permitted":"lookup","rows":0},
+  {"id":"VOICE-08","goal":"Silence on slot readback","phone_turns":["+91 98765 43210"],"readback":"9876543210","reply":"yes","slot_reply":"","permitted":"lookup","rows":0}
+]

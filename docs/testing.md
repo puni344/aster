@@ -1,5 +1,7 @@
 # Verification report
 
+This is the historical build report. [Current verification and release gates](qa/release-verdict.md).
+
 **Submission verdict: NO-GO for the required live demonstration.** The local system and its deterministic workflow are implemented. No complete human-spoken call has been observed. The first Gemini inference invoked the right tool without returning usable slots; the next inference was rate-limited. ElevenLabs credentials were missing.
 
 ## Observed runs

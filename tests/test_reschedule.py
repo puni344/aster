@@ -3,6 +3,7 @@ from threading import Barrier
 
 from backend.clinic import Clinic, resolve_day
 from backend.session import Conversation
+from tests.consent import perform
 from tests.test_clinic import confirm
 
 
@@ -15,7 +16,9 @@ def setup(tmp_path):
             "check_doctor_availability", {"doctor": "arjun", "date": "tomorrow"}, "a"
         )["slots"]
     ]
-    receipt = call.invoke("book_appointment", {"slot_id": slots[0]}, "book")["receipt"]
+    receipt = perform(call, "book_appointment", {"slot_id": slots[0]}, "book")[
+        "receipt"
+    ]
     return clinic, call, slots, receipt
 
 
@@ -23,7 +26,7 @@ def test_one_reference_and_released_slot(tmp_path):
     c, user, slots, old = setup(tmp_path)
     user.user("Can you reschedule?")
     assert (
-        user.invoke("book_appointment", {"slot_id": slots[1]}, "wrong")["error"]
+        perform(user, "book_appointment", {"slot_id": slots[1]}, "wrong")["error"]
         == "RESCHEDULE_REQUIRED"
     )
     args = {
@@ -31,15 +34,15 @@ def test_one_reference_and_released_slot(tmp_path):
         "slot_id": slots[1],
         "source_slot_id": slots[0],
     }
-    moved = user.invoke("reschedule_appointment", args, "move")
+    moved = perform(user, "reschedule_appointment", args, "move")
     assert moved["receipt"]["previous_start"] == old["start"]
-    assert user.invoke("reschedule_appointment", args, "move") == moved
+    assert perform(user, "reschedule_appointment", args, "move") == moved
     assert (
-        user.invoke("reschedule_appointment", args, "repeat")["receipt"]["reference"]
+        perform(user, "reschedule_appointment", args, "repeat")["receipt"]["reference"]
         == old["reference"]
     )
     assert (
-        user.invoke("book_appointment", {"slot_id": slots[0]}, "book")["receipt"][
+        perform(user, "book_appointment", {"slot_id": slots[0]}, "book")["receipt"][
             "start"
         ]
         == moved["receipt"]["start"]
@@ -80,7 +83,7 @@ def test_conflict_owner_and_stale_source(tmp_path):
 def test_move_races_and_distinct_visit(tmp_path):
     c, user, slots, old = setup(tmp_path)
     assert (
-        user.invoke("book_appointment", {"slot_id": slots[1]}, "accidental")["error"]
+        perform(user, "book_appointment", {"slot_id": slots[1]}, "accidental")["error"]
         == "EXISTING_VISIT"
     )
     barrier = Barrier(2)
@@ -96,12 +99,12 @@ def test_move_races_and_distinct_visit(tmp_path):
     assert sum("receipt" in r for r in results) == 1
     assert any(r.get("error") == "APPOINTMENT_CHANGED" for r in results)
     user.user("Book a separate appointment")
-    assert "receipt" in user.invoke(
-        "book_appointment", {"slot_id": slots[0]}, "separate"
+    assert "receipt" in perform(
+        user, "book_appointment", {"slot_id": slots[0]}, "separate"
     )
     user.user("Please reschedule my visit")
     assert (
-        user.invoke("reschedule_appointment", {"slot_id": slots[1]}, "ambiguous")[
+        perform(user, "reschedule_appointment", {"slot_id": slots[1]}, "ambiguous")[
             "error"
         ]
         == "APPOINTMENT_AMBIGUOUS"
@@ -137,7 +140,7 @@ def test_partial_move_and_interruption_leave_original(tmp_path):
     c, user, slots, old = setup(tmp_path)
     args = {"slot_id": slots[1], "reference": old["reference"]}
     assert (
-        user.invoke("reschedule_appointment", args, "guess")["error"]
+        perform(user, "reschedule_appointment", args, "guess")["error"]
         == "MOVE_INTENT_REQUIRED"
     )
     user.user("Reschedule my appointment")
@@ -150,9 +153,11 @@ def test_partial_move_and_interruption_leave_original(tmp_path):
             "CREATE TRIGGER stop_move BEFORE INSERT ON events BEGIN SELECT RAISE(ABORT,'rollback'); END"
         )
     with pytest.raises(sqlite3.IntegrityError):
-        user.invoke("reschedule_appointment", args, "rollback")
+        perform(user, "reschedule_appointment", args, "rollback")
     user.closed = True
-    assert user.invoke("reschedule_appointment", args, "late")["error"] == "CALL_ENDED"
+    assert (
+        perform(user, "reschedule_appointment", args, "late")["error"] == "CALL_ENDED"
+    )
     assert c.receipt(old["reference"], user.phone)["slot_id"] == slots[0]
     assert len(c.changes(0)) == 1
 
@@ -160,7 +165,7 @@ def test_partial_move_and_interruption_leave_original(tmp_path):
 def test_replayed_tool_id_cannot_acknowledge_another_slot(tmp_path):
     c, user, slots, old = setup(tmp_path)
     assert (
-        user.invoke("book_appointment", {"slot_id": slots[1]}, "book")["error"]
+        perform(user, "book_appointment", {"slot_id": slots[1]}, "book")["error"]
         == "REQUEST_CONFLICT"
     )
     args = {"reference": old["reference"]}
@@ -172,7 +177,7 @@ def test_replayed_tool_id_cannot_acknowledge_another_slot(tmp_path):
         == "Cancelled"
     )
     assert (
-        user.invoke("book_appointment", {"slot_id": slots[0]}, "delayed")["error"]
+        perform(user, "book_appointment", {"slot_id": slots[0]}, "delayed")["error"]
         == "SLOT_UNAVAILABLE"
     )
     assert not c.owned(user.phone)

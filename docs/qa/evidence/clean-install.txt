@@ -1,0 +1,1 @@
+Clean installation smoke exit 0

@@ -1,0 +1,9 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert 'receipt' in {'error': 'CONFIRM_SLOT', 'question': 'Should I book Dr Asha Menon on 26 November at 09:00?', 'instruction': 'Say the question exactly. Wait for the caller to confirm before calling again.'}
+     +  where {'error': 'CONFIRM_SLOT', 'question': 'Should I book Dr Asha Menon on 26 November at 09:00?', 'instruction': 'Say the question exactly. Wait for the caller to confirm before calling again.'} = invoke('book_appointment', {'slot_id': 'asha-2026-11-26-9'}, 'book')
+     +    where invoke = <backend.session.Conversation object at 0x000002715D5B3CE0>.invoke
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:230: AssertionError: assert 'receipt' in {'error': 'CONFIRM_SLOT', 'question': 'Should I book Dr Asha Menon on 26 November at 09:00?', 'instruction': 'Say the question exactly. Wait for the caller to confirm before calling again.'}
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_silent_tool_turn_preserves_completed_question
+1 failed, 18 deselected in 0.96s

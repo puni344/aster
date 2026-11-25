@@ -1,0 +1,9 @@
+{"id": "availability", "reference": "Please check availability with Doctor Arjun Rao tomorrow.", "transcript": "Please check availability with Dr. Arjun Rao tomorrow.", "words": 8, "word_edits": 0, "commit_to_final_ms": 355}
+{"id": "phone", "reference": "Nine eight seven six five four three two one zero.", "transcript": "9876543210.", "words": 10, "word_edits": 10, "commit_to_final_ms": 498, "phone_exact": true}
+{"id": "slow-phone", "reference": "Nine eight seven six five four three two one zero.", "transcript": "9876543210.", "words": 10, "word_edits": 10, "commit_to_final_ms": 389, "phone_exact": true}
+{"id": "fast-phone", "reference": "Nine eight seven six five four three two one zero.", "transcript": "9876543210.", "words": 10, "word_edits": 10, "commit_to_final_ms": 591, "phone_exact": true}
+{"id": "correction", "reference": "No, the last digit is one. Nine eight seven six five four three two one one.", "transcript": "No, the last digit is 1. 9876543211.", "words": 16, "word_edits": 11, "commit_to_final_ms": 343, "phone_exact": true}
+{"id": "positive", "reference": "Yes, that is correct.", "transcript": "Yes, that is correct.", "words": 4, "word_edits": 0, "commit_to_final_ms": 338}
+{"id": "negative", "reference": "No, wait.", "transcript": "No, wait.", "words": 2, "word_edits": 0, "commit_to_final_ms": 409}
+{"id": "specialty", "reference": "Cardiology tomorrow at three ten P M.", "transcript": "Cardiology tomorrow at 3:10 PM.", "words": 7, "word_edits": 4, "commit_to_final_ms": 335}
+{"id": "interrupt", "reference": "Actually, stop there.", "transcript": "Actually, stop there.", "words": 3, "word_edits": 0, "commit_to_final_ms": 348}

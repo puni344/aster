@@ -1,0 +1,10 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+E   AssertionError: assert 'invalid' == '+919876543211'
+      
+      - +919876543211
+      + invalid
+C:\Users\punit\OneDrive\Documents\ChatGPT\sde\tests\test_release.py:205: AssertionError: assert 'invalid' == '+919876543211'
+=========================== short test summary info ===========================
+FAILED tests/test_release.py::test_correction_with_repeated_full_number - Ass...
+1 failed, 14 deselected in 0.75s

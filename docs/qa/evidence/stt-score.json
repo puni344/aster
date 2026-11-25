@@ -1,0 +1,16 @@
+{
+  "samples": 9,
+  "phone_exact": {
+    "phone": true,
+    "slow-phone": true,
+    "fast-phone": true,
+    "correction": true
+  },
+  "reference_words": 70,
+  "lexical_word_edits": 45,
+  "median_commit_to_final_ms": 355,
+  "range_ms": [
+    335,
+    591
+  ]
+}

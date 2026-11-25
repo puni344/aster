@@ -1,6 +1,7 @@
 """Authority derives from adjacent completed turns in one call."""
 
 import re
+import unicodedata
 from datetime import datetime
 from uuid import uuid4
 
@@ -55,6 +56,8 @@ YES = {
     "yes correct",
     "yes that's correct",
     "yes that is correct",
+    "that is correct",
+    "that is right",
     "correct",
     "that's right",
     "that's correct",
@@ -69,7 +72,20 @@ def clean(text):
 
 
 def number(text):
-    for match in reversed(list(SEQUENCE.finditer(text.lower()))):
+    text = "".join(
+        str(unicodedata.decimal(c)) if c.isdecimal() and not c.isascii() else c
+        for c in text
+    )
+    correction = re.search(
+        r"\b(first|last) digit is\s+(" + "|".join(WORDS) + r"|[0-9])\b",
+        text,
+        re.IGNORECASE,
+    )
+    if correction:
+        text = text[correction.end() :]
+    candidate = None
+    end = 0
+    for match in SEQUENCE.finditer(text.lower()):
         digits = ""
         repeat = 1
         tokens = re.findall(TOKEN, match.group())
@@ -90,6 +106,14 @@ def number(text):
             elif token in TEENS:
                 token = str(TEENS[token])
             if token in ("double", "triple"):
+                if (
+                    repeat != 1
+                    or index == len(tokens)
+                    or not (
+                        tokens[index] in WORDS or re.fullmatch("[0-9]", tokens[index])
+                    )
+                ):
+                    return "invalid"
                 repeat = 2 if token == "double" else 3
             else:
                 digits += WORDS.get(token, token) * repeat
@@ -99,9 +123,21 @@ def number(text):
         if len(digits) == 12 and digits.startswith("91"):
             digits = digits[2:]
         if len(digits) == 10 and digits[0] in "6789" and repeat == 1:
-            return "+91" + digits
+            if candidate and not re.search(
+                r"\b(sorry|correction|actually|i mean)\b",
+                text[end : match.start()],
+                re.IGNORECASE,
+            ):
+                return "invalid"
+            candidate, end = "+91" + digits, match.end()
+            continue
         return "invalid"
-    return None
+    if candidate and correction:
+        index = 3 if correction[1].lower() == "first" else -1
+        digit = correction[2].lower()
+        if candidate[index] != WORDS.get(digit, digit):
+            return "invalid"
+    return candidate
 
 
 class Conversation:
@@ -115,7 +151,8 @@ class Conversation:
         self.cancel_slot = None
         self.known_slots = {}
         self.moving = self.additional = False
-        self.offered = set()
+        self.offered = {}
+        self.proposal = self.slot_question = self.agreed = None
         self.last_result = {}
 
     @property
@@ -145,6 +182,16 @@ class Conversation:
         )
         awaiting = self.challenge
         self.challenge = None
+        if (
+            not awaiting
+            and (self.agreed or self.cancel_ok)
+            and reply in YES - {"yes cancel it"}
+        ):
+            return
+        self.agreed = None
+        if awaiting == "slot" and reply in YES - {"yes cancel it"}:
+            self.agreed = self.proposal
+        self.slot_question = self.proposal = None
         if value or correcting:
             self.phone = None
             self.pending = value if value != "invalid" else None
@@ -152,7 +199,11 @@ class Conversation:
             self.cancel_ok = False
             self.last_result.clear()
             self.known_slots.clear()
-        elif awaiting and reply in YES:
+        elif (
+            awaiting
+            and reply in YES
+            and (reply != "yes cancel it" or awaiting == "cancel")
+        ):
             if awaiting == "phone":
                 self.phone, self.pending = self.pending, None
             elif awaiting == "cancel":
@@ -165,24 +216,76 @@ class Conversation:
                 self.pending = None
 
     def assistant(self, text, interrupted=False):
+        if not text and not interrupted:
+            return
+        self.agreed = None
+        self.cancel_ok = False
         self.challenge = None
         if interrupted:
             return
         if (
             self.pending
             and number(text) == self.pending
-            and re.search(r"\b(correct|right|confirm)\b", text, re.IGNORECASE)
+            and re.search(
+                r"\b(?:(?:is|was) (?:that|this|it|your number|number) (?:correct|right)|"
+                r"is number (?:correct|right)|(?:is that (?:correct|right)|please confirm) number|"
+                r"is your (?:(?:indian )?(?:mobile|phone) )?number number|"
+                r"can you confirm (?:that )?your (?:(?:mobile|phone) )?number is number|"
+                r"number (?:correct|right)|can you confirm(?: (?:that|this|your number))?)$",
+                clean(SEQUENCE.sub(" number ", text)),
+            )
         ):
             self.challenge = "phone"
-        elif self.cancel_question and clean(self.cancel_question) in clean(text):
+        elif self.cancel_question and clean(self.cancel_question) == clean(text):
             self.challenge = "cancel"
+        elif self.slot_question and clean(self.slot_question) == clean(text):
+            self.challenge = "slot"
+
+    def confirm_slot(self, action, slot, origin=None):
+        key = (self.phone, action, slot, origin)
+        if self.agreed == key:
+            self.agreed = None
+            return None
+        self.agreed = self.challenge = None
+        self.proposal = key
+        item = self.offered[slot]
+        when = datetime.fromisoformat(item["start"]).strftime("%d %B at %H:%M")
+        self.slot_question = f"Should I book {item['doctor']} on {when}?"
+        if origin:
+            current = datetime.fromisoformat(origin[2]).strftime("%d %B at %H:%M")
+            self.slot_question = f"Should I move your visit with {origin[3]} on {current} to {item['doctor']} on {when}?"
+        return {
+            "error": "CONFIRM_SLOT",
+            "question": self.slot_question,
+            "instruction": "Say the question exactly. Wait for the caller to confirm before calling again.",
+        }
 
     def invoke(self, name, arguments, request):
         if self.closed:
             return {"error": "CALL_ENDED"}
-        if not all(isinstance(v, str) and len(v) <= 160 for v in arguments.values()):
+        fields = {
+            "check_doctor_availability": {
+                "doctor",
+                "specialty",
+                "date",
+                "preferred_time",
+            },
+            "book_appointment": {"slot_id"},
+            "reschedule_appointment": {"slot_id", "reference", "source_slot_id"},
+            "cancel_appointment": {"reference"},
+        }
+        if name not in fields:
+            return {"error": "UNKNOWN_TOOL"}
+        if (
+            not isinstance(arguments, dict)
+            or not arguments.keys() <= fields[name]
+            or not all(isinstance(v, str) and len(v) <= 160 for v in arguments.values())
+            or not isinstance(request, str)
+            or not 0 < len(request) <= 256
+        ):
             return {"error": "INVALID_ARGUMENT"}
         if name == "check_doctor_availability":
+            self.agreed = self.proposal = self.slot_question = None
             result = self.clinic.available(
                 **{
                     k: arguments.get(k, "")
@@ -190,7 +293,7 @@ class Conversation:
                 }
             )
             self.offered.update(
-                s["slot_id"]
+                (s["slot_id"], s)
                 for k in ("slots", "alternatives")
                 for s in result.get(k, [])
             )
@@ -208,10 +311,7 @@ class Conversation:
                 current = self.clinic.receipt(
                     cached["receipt"]["reference"], self.phone
                 )
-                if current and (current["start"], current["status"]) != (
-                    cached["receipt"]["start"],
-                    cached["receipt"]["status"],
-                ):
+                if current and current["revision"] != cached["receipt"].get("revision"):
                     return {"receipt": current}
             return cached
         if name in {"book_appointment", "reschedule_appointment"}:
@@ -251,6 +351,11 @@ class Conversation:
                         "visit": visit,
                         "instruction": "Verify this is the intended visit, then use its original slot ID.",
                     }
+                gate = self.confirm_slot(
+                    name, slot, (ref, source, visit["start"], visit["name"])
+                )
+                if gate:
+                    return gate
                 result = self.clinic.mutate(
                     "move",
                     slot,
@@ -260,6 +365,9 @@ class Conversation:
                     source=source,
                 )
             else:
+                gate = self.confirm_slot(name, slot)
+                if gate:
+                    return gate
                 result = self.clinic.mutate(
                     "book",
                     slot,
@@ -318,6 +426,6 @@ class Conversation:
             receipt = result["receipt"]
             self.known_slots[receipt["reference"]] = receipt["slot_id"]
             if receipt["status"] == "Cancelled":
-                self.offered.discard(receipt["slot_id"])
+                self.offered.pop(receipt["slot_id"], None)
             self.last_result[request] = (name, dict(arguments), result)
         return result

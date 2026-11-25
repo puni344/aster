@@ -1,0 +1,33 @@
+........................................................................ [ 82%]
+...............                                                          [100%]
+============================ Hypothesis Statistics ============================
+tests/test_properties.py::test_equivalent_phone_format:
+
+  - during generate phase (0.42 seconds):
+    - Typical runtimes: ~ 0-3 ms, of which < 1ms in data generation
+    - 100 passing, 0 failing, and 0 invalid test cases
+
+  - Stopped because settings.max_examples=100
+
+
+tests/test_properties.py::test_never_truncate_extra_digit:
+
+  - during generate phase (0.12 seconds):
+    - Typical runtimes: ~ 0-1 ms, of which < 1ms in data generation
+    - 100 passing, 0 failing, and 0 invalid test cases
+
+  - Stopped because settings.max_examples=100
+
+
+tests/test_properties.py::TestAppointmentMachine::runTest:
+
+  - during generate phase (78.85 seconds):
+    - Typical runtimes: ~ 203-1119 ms, of which ~ 9-51 ms in data generation
+    - 120 passing, 0 failing, and 1 invalid test cases
+    - Events:
+      * 72.73%, Retried draw from sampled_from([Rule(function=reopen, _cached_hash=4303603816155117713), Rule(function=book, arguments={'index': integers(min_value=0, max_value=2), 'caller': integers(min_value=0, max_value=2)}, _cached_hash=7599752023152282105, arguments_strategies={'caller': integers(min_value=0, max_value=2), 'index': integers(min_value=0, max_value=2)}), Rule(function=cancel, arguments={'index': integers(min_value=0, max_value=2), 'own': booleans()}, _cached_hash=4184860218852452219, arguments_strategies={'index': integers(min_value=0, max_value=2), 'own': booleans()})]).filter(RuleStrategy(machine=AppointmentMachine({...}))._rule_is_enabled) to satisfy filter
+
+  - Stopped because settings.max_examples=120
+
+
+87 passed in 111.13s (0:01:51)

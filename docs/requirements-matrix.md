@@ -1,5 +1,7 @@
 # Assignment traceability
 
+This is the historical build report. [Current verification and release gates](qa/release-verdict.md).
+
 Verification is scoped to the evidence in the third column. A locally constructed provider client does not establish live provider execution.
 
 | Requirement and acceptance condition | Implementation | Evidence | Status |

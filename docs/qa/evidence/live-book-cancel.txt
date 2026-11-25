@@ -1,0 +1,48 @@
+Assistant turn 1 Aster
+Hello, you've reached Aster Clinic's AI receptionist. How can I help you today?
+Synthetic caller clip: book
+Assistant turn 2 Aster
+Could you please state your Indian mobile number?
+Synthetic caller clip: phone
+Assistant turn 3 Aster
+I have 9-8-7-6-5-4-3-2-1-0. Is that correct?
+Synthetic caller clip: yes
+Assistant turn 4 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Assistant turn 5 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Assistant turn 6 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Assistant turn 7 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Assistant turn 8 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Assistant turn 9 Aster
+Should I book Dr Asha Menon on 26 November at 09:00?
+Synthetic caller clip: yes
+Observed outcome: No committed booking observed
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'No committed booking observed'
+- 'Live cancellation observed'
+
+    at file:///C:/Users/punit/OneDrive/Documents/ChatGPT/sde/frontend/tests/live-book-cancel.mjs:63:10 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: 'No committed booking observed',
+  expected: 'Live cancellation observed',
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+
+Node.js v24.19.0

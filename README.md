@@ -1,6 +1,6 @@
 # Aster · Voice Reception
 
-A local fictional clinic desk with a browser voice companion. Six doctors share a SQLite schedule. Receptionists can see a booking or cancellation arrive in another open tab. The voice worker uses ElevenLabs Scribe Realtime, Google Gemini 2.5 Flash function calling, and ElevenLabs Flash TTS. All three services run on the Python side.
+A local fictional clinic desk with a browser voice companion. Six doctors share a SQLite schedule. Receptionists can see a booking or cancellation arrive in another open tab. The voice worker uses ElevenLabs Scribe Realtime, configurable Google Gemini Flash function calling, and ElevenLabs Flash TTS. All three services run on the Python side.
 
 **Readiness:** the dashboard, database, browser media transport and structured receipts have been exercised. A complete spoken booking through both providers still needs verification. See [testing evidence](docs/testing.md).
 
@@ -27,7 +27,7 @@ Skip environment creation and installation if using the prepared workspace. Copy
 | ELEVENLABS_API_KEY | ElevenLabs API key with access to realtime speech recognition and text-to-speech. Check the available quota and voice access in your account. |
 | GEMINI_API_KEY | Google AI Studio key with free-tier access to generate content with the selected Gemini model. |
 | ELEVENLABS_VOICE_ID | Optional accessible ElevenLabs voice. The example supplies a default. |
-| GEMINI_MODEL | Defaults to gemini-2.5-flash. A replacement must support text inference with function calling and have available quota. |
+| GEMINI_MODEL | Defaults to gemini-3.5-flash-lite. A replacement must support text inference with function calling and have available quota. |
 | ASTER_DB | Optional filesystem path for the SQLite database. Defaults to aster.sqlite at the repository root. |
 
 ```powershell
@@ -49,6 +49,7 @@ The roster opens on the next day after today's slots elapse. Dates use Asia/Kolk
 ## Verify
 
 ```powershell
+.\.venv\Scripts\python -m pip install -r tests/requirements-qa.txt
 .\.venv\Scripts\python -m pytest -q
 npm --prefix frontend run build
 npm --prefix frontend test
@@ -76,3 +77,5 @@ Browser tests launch an isolated loopback server and temporary database on port 
 
 AI assistance generated the implementation, tests and engineering notes in this session. The candidate confirmed free-tier status and authorized two bounded Gemini probes. Candidate authorship, manual code review and a successful candidate-spoken call require separate evidence. The submission form asks for a pipeline explanation in the candidate's own words.
 See [rescheduling and design QA](docs/reschedule-review.md) for the current incident repair, screenshots, live provider checks and regression evidence.
+
+The current release gates, reproducible QA commands and human voice trials are in [the release review](docs/qa/release-verdict.md). With uv on a OneDrive workspace, use `uv pip install --link-mode copy` if Windows rejects hardlinks.

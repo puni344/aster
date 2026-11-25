@@ -14,13 +14,15 @@ const browser = await chromium.launch({
 try {
   const ctx = await browser.newContext({ permissions: ["microphone"] });
   const page = await ctx.newPage();
-  await page.goto("http://127.0.0.1:8000");
+  await page.goto(process.env.ASTER_BASE_URL || "http://127.0.0.1:8000");
+  const started = performance.now();
   await page.getByRole("button", { name: "Try call", exact: true }).click();
   await page.waitForFunction(
     () => document.querySelector("audio")?.srcObject,
     {},
     { timeout: 30000 },
   );
+  console.log("Click to remote track attached (ms):", Math.round(performance.now() - started));
   const audible = await page.evaluate(async () => {
     const audio = document.querySelector("audio");
     const ac = new AudioContext();
@@ -66,7 +68,7 @@ try {
   );
   const end = page.getByRole("button", { name: "End call" });
   if (await end.count()) await end.click();
-  if (audible < 0.01) process.exitCode = 1;
+  if (audible < 0.01 || await page.locator(".callError").count() || await page.locator(".agentLine:not(.draft)").count() < 2) process.exitCode = 1;
 } finally {
   await browser.close();
 }

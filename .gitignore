@@ -11,3 +11,8 @@ __pycache__/
 .pytest_cache/
 test-results/
 playwright-report/
+
+.hypothesis/
+.coverage
+.ruff_cache/
+docs/qa/evidence/final-tool-trace.txt
